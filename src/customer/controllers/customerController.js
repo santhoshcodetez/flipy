@@ -8,11 +8,10 @@ const list = async (req, res) => {
     try {
         let { page = 1, limit = 1, ...filters } = req.body;
 
-        // Convert to numbers
+        
         page = Number(page);
         limit = Number(limit);
 
-        // Validation: Ensure valid numbers
         if (isNaN(page) || isNaN(limit) || page <= 0 || limit <= 0) {
             return responseHandler.error(res, "Invalid pagination values", 400);
         }

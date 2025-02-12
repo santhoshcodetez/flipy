@@ -1,19 +1,52 @@
 const { Product } = require("../../models");
 
-const getAllProducts = async () => {
+const listProducts = async (filters, page = 1, limit = 10) => {
+    page = Number(page);
+    limit = Number(limit);
+
+    if (isNaN(page) || isNaN(limit) || page <= 0 || limit <= 0) {
+        throw new Error("Invalid pagination values");
+    }
+
+    const offset = (page - 1) * limit;
+    const { count, rows } = await Product.findAndCountAll({
+        where: filters,
+        limit: limit,
+        offset: offset,
+    });
+
+    return {
+        totalRecords: count,
+        totalPages: Math.ceil(count / limit),
+        currentPage: page,
+        data: rows
+    };
+};
+const listAllProducts = async () => {
     try {
-        const productget = await Product.findAll();
-        const productCount = await Product.count();
-        return { productget, productCount };
+        const products = await Product.findAll();
+        return products;
     } catch (error) {
         throw new Error(error.message);
     }
 };
 
-const createProduct = async (productData) => {
+const overviewProducts = async (id) => {
     try {
-        const productcreate = await Product.create(productData);
-        return productcreate;
+        const product = await Product.findOne({ where: { id } });
+        if (!product) {
+            throw new Error("Product not found");
+        }
+        return product;
+    } catch (error) {
+        throw new Error(error.message);
+    }
+};
+
+const storeProduct = async (productData) => {
+    try {
+        const product = await Product.create(productData);
+        return product;
     } catch (error) {
         throw new Error(error.message);
     }
@@ -21,8 +54,8 @@ const createProduct = async (productData) => {
 
 const updateProduct = async (id, updatedData) => {
     try {
-        const productupdate = await Product.update(updatedData, { where: { id } });
-        return productupdate;
+        await Product.update(updatedData, { where: { id } });
+        return { message: "Product updated successfully" };
     } catch (error) {
         throw new Error(error.message);
     }
@@ -30,16 +63,18 @@ const updateProduct = async (id, updatedData) => {
 
 const deleteProduct = async (id) => {
     try {
-        const deleteProduct = await Product.destroy({ where: { id } });
-        return deleteProduct;
+        await Product.destroy({ where: { id } });
+        return { message: "Product deleted successfully" };
     } catch (error) {
         throw new Error(error.message);
     }
 };
 
 module.exports = {
-    getAllProducts,
-    createProduct,
+    listProducts,
+    listAllProducts,
+    overviewProducts,
+    storeProduct,
     updateProduct,
     deleteProduct
 };

@@ -1,17 +1,80 @@
-const { OrderDetail, Order, Payment } = require("../../models");
+const { Order, OrderDetail, Payment } = require("../../models");
 const { generateOrderNum } = require("../validations/orderValidation");
 
-const getAllOrders = async () => {
+// List with pagination
+const list = async (filters, page = 1, limit = 10) => {
+    page = Number(page);
+    limit = Number(limit);
+
+    if (isNaN(page) || isNaN(limit) || page <= 0 || limit <= 0) {
+        throw new Error("Invalid pagination values");
+    }
+
+    const offset = (page - 1) * limit;
+    const { count, rows } = await Order.findAndCountAll({
+        where: filters,
+        limit: limit,
+        offset: offset,
+    });
+
+    return {
+        totalRecords: count,
+        totalPages: Math.ceil(count / limit),
+        currentPage: page,
+        data: rows
+    };
+};
+
+const listAll = async () => {
     try {
-        const orders = await Order.findAll();
-        return orders;
+        return await Order.findAll({
+            include: [
+                { 
+                    model: OrderDetail, 
+                    as: "OrderDetails" // Use the alias from Order model
+                },
+                { 
+                    model: Payment, 
+                    as: "PaymentValue" // Use the alias from Order model
+                }
+            ]
+        });
+    } catch (error) {
+        console.log(error);
+        throw new Error(error.message);
+    }
+};
+
+
+// Fetch a specific order overview
+const overview = async (id) => {
+    try {
+        const order = await Order.findOne({
+            where: { id },
+            include: [
+                { 
+                    model: OrderDetail, 
+                    as: "OrderDetails" // Use the alias from Order model
+                },
+                { 
+                    model: Payment, 
+                    as: "PaymentValue" // Use the alias from Order model
+                }
+            ]
+        });
+
+        if (!order) throw new Error("Order not found");
+        return order;
     } catch (error) {
         throw new Error(error.message);
     }
 };
 
-const createOrder = async (orderData) => {
+
+// Create an order with details and payments
+const store = async (orderData) => {
     const { deliveryDate, orderDate, orderStatus, customerId, orderDetails, payments } = orderData;
+
     try {
         const orderNum = generateOrderNum();
         const order = await Order.create({
@@ -19,35 +82,34 @@ const createOrder = async (orderData) => {
             deliveryDate,
             orderDate,
             orderStatus,
-            customerId,
+            customerId
         });
 
-        // Creating related OrderDetails
-        for (const orderdetailuser of orderDetails) {
-            const totalAmount = orderdetailuser.Price - orderdetailuser.discount;
-
+        // Insert OrderDetails
+        for (const orderDetail of orderDetails) {
+            const totalAmount = orderDetail.Price - orderDetail.discount;
             await OrderDetail.create({
-                Quantity: orderdetailuser.Quantity,
-                Price: orderdetailuser.Price,
-                discount: orderdetailuser.discount,
-                totalAmount: totalAmount,
-                status: orderdetailuser.status,
+                Quantity: orderDetail.Quantity,
+                Price: orderDetail.Price,
+                discount: orderDetail.discount,
+                totalAmount,
+                status: orderDetail.status,
                 orderId: order.id,
-                productId: orderdetailuser.productId
+                productId: orderDetail.productId
             });
         }
 
-        // Creating related Payment entries
-        for (const paymentuser of payments) {
-            const totalAmounts = paymentuser.orderAmount - paymentuser.voucher;
-            const paymentType = paymentuser.paymentType === 1 ? 1 : paymentuser.paymentType === 2 ? 2 : null;
+        // Insert Payments
+        for (const payment of payments) {
+            const totalAmount = payment.orderAmount - payment.voucher;
+            const paymentType = payment.paymentType === 1 ? 1 : payment.paymentType === 2 ? 2 : null;
 
             await Payment.create({
                 orderId: order.id,
-                orderAmount: paymentuser.orderAmount,
-                voucher: paymentuser.voucher,
-                totalAmount: totalAmounts,
-                paymentType: paymentType  
+                orderAmount: payment.orderAmount,
+                voucher: payment.voucher,
+                totalAmount,
+                paymentType
             });
         }
 
@@ -57,7 +119,8 @@ const createOrder = async (orderData) => {
     }
 };
 
-const updateOrder = async (id, updatedData) => {
+// Update an order
+const update = async (id, updatedData) => {
     try {
         const updatedOrder = await Order.update(updatedData, { where: { id } });
         return updatedOrder;
@@ -66,7 +129,8 @@ const updateOrder = async (id, updatedData) => {
     }
 };
 
-const deleteOrder = async (id) => {
+// Delete an order
+const remove = async (id) => {
     try {
         const deletedOrder = await Order.destroy({ where: { id } });
         return deletedOrder;
@@ -76,8 +140,10 @@ const deleteOrder = async (id) => {
 };
 
 module.exports = {
-    getAllOrders,
-    createOrder,
-    updateOrder,
-    deleteOrder
+    list,
+    listAll,
+    overview,
+    store,
+    update,
+    remove
 };

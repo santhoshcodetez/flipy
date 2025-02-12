@@ -80,7 +80,8 @@ const update = async (req, res) => {
         return responseHandler.success(res, "Updated customer successfully");
     } catch (error) {
         return responseHandler.error(res, "Error updating customer", 400);
-    }
+  
+  }                                               
 };
 
 const deleteCustomer = async (req, res) => {

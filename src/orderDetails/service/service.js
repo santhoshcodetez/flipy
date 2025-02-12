@@ -1,7 +1,8 @@
+const { error } = require("../../global/responseHandle");
 const { OrderDetail, Order, Product, Customer, Payment } = require("../../models");
 const { Op } = require("sequelize");
 
-const getAllDetails = async () => {
+const listAll = async () => {
     try {
         const details = await Order.findAll({
             include: [
@@ -27,7 +28,7 @@ const getAllDetails = async () => {
     }
 };
 
-const getDetailsByFilter = async (filterData) => {
+const overview = async (filterData) => {
     const { customerId, paymentType, orderStatus, fromDate, toDate, orderFromDate, orderToDate } = filterData;
     try {
         let whereCondition = {};
@@ -86,9 +87,7 @@ const getDetailsByFilter = async (filterData) => {
                 {
                     model: Payment,
                     as: "PaymentValue",
-                    where: wherePaymentCondition,
                     where: Object.keys(wherePaymentCondition).length ? wherePaymentCondition : undefined
-                    
                 }
             ]
         });
@@ -98,11 +97,21 @@ const getDetailsByFilter = async (filterData) => {
     }
 };
 
-const getAllDetailsWithPagination = async (paginationData) => {
-    const { page, size, offset } = paginationData;
+const list = async ({page = 1, limit = 10}) => {
+    page = Number(page);
+    limit = Number(limit);
+
+    console.log("Received values:", { page, limit });
+
+    if (isNaN(page) || isNaN(limit) || page <= 0 || limit <= 0) {
+        throw new Error("Invalid pagination values");
+    }
+
+    const offset = (page - 1) * limit;
+
     try {
-        const details = await Order.findAndCountAll({
-            limit: size,
+        const { count, rows } = await Order.findAndCountAll({
+            limit: limit,
             offset: offset,
             include: [
                 {
@@ -121,13 +130,21 @@ const getAllDetailsWithPagination = async (paginationData) => {
                 }
             ]
         });
-        return details;
+
+        return {
+            success: true,
+            totalRecords: count,
+            totalPages: Math.ceil(count / limit),
+            currentPage: page,
+            data: rows
+        };
     } catch (error) {
-        throw new Error(error.message);
+        console.error("Error fetching data:", error);
+        throw new Error(`Error fetching data: ${error.message || error}`);
     }
 };
 
-const createOrderDetail = async (orderDetailData) => {
+const store = async (orderDetailData) => {
     try {
         const newOrderDetail = await OrderDetail.create(orderDetailData);
         return newOrderDetail;
@@ -136,7 +153,7 @@ const createOrderDetail = async (orderDetailData) => {
     }
 };
 
-const updateOrderDetail = async (id, updatedData) => {
+const update = async (id, updatedData) => {
     try {
         const updatedOrderDetail = await OrderDetail.update(updatedData, { where: { id } });
         return updatedOrderDetail;
@@ -155,11 +172,10 @@ const deleteOrderDetail = async (id) => {
 };
 
 module.exports = {
-    getAllDetails,
-    getDetailsByFilter,
-    getAllDetailsWithPagination,
-    createOrderDetail,
-    updateOrderDetail,
-    deleteOrderDetail
+    listAll,
+    overview,
+    list,
+    store,
+    update,
+    delete: deleteOrderDetail
 };
-     

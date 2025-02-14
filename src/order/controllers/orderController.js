@@ -20,6 +20,8 @@ const list = async (req, res) => {
 
         const customers = await orderService.list(filters, page, limit);
         return responseHandler.success(res, "Fetched filtered customers successfully", customers);
+        // console.log(responseHandler.error);
+        
     } catch (error) {
         console.error("Error fetching filtered customers:", error);
         return responseHandler.error(res, "Error fetching filtered customers", 400);

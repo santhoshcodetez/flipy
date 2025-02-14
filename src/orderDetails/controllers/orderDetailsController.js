@@ -25,7 +25,7 @@ const overview = async (req, res) => {
 const list = async (req, res) => {
     try {
         const details = await orderDetailService.list(req.body);
-        return responseHandler.success(res, "Data fetched successfully", { totalCount: details.count, data: details.rows });
+        return responseHandler.success(res, "Data fetched successfully",details);
     } catch (error) {
         return responseHandler.error(res, `Error fetching data: ${error.message}`, 500);
     }

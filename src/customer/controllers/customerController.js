@@ -68,6 +68,7 @@ const store = async (req, res) => {
         const newCustomer = await customerService.registerCustomer(req.body);
         return responseHandler.success(res, "Customer registered successfully", newCustomer);
     } catch (error) {
+        
         return responseHandler.error(res, error.message, 400);
     }
 };

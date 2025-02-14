@@ -19,14 +19,23 @@ const listAll = async () => {
                             as: "ProductValue"
                         }
                     ]
+                },
+                {
+                    model: Payment, 
+                    as: "PaymentValue"
                 }
             ]
         });
+
+        console.log("Fetched Orders with Payments:", JSON.stringify(details, null, 2)); 
+
         return details;
     } catch (error) {
+        console.error("Error fetching data:", error);
         throw new Error(error.message);
     }
 };
+
 
 const overview = async (filterData) => {
     const { customerId, paymentType, orderStatus, fromDate, toDate, orderFromDate, orderToDate } = filterData;

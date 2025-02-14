@@ -4,7 +4,7 @@ const responseHandler = require("../../global/responseHandle");
 const listAll = async (req, res) => {
     try {
         const details = await orderDetailService.listAll();
-        return responseHandler.success(res, "Data fetched successfully", { data: details });
+        return responseHandler.success(res, "Data fetched successfully", { details });
     } catch (error) {
         return responseHandler.error(res, `Error fetching data: ${error.message}`, 500);
     }
